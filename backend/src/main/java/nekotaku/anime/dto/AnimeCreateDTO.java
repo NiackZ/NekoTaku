@@ -1,4 +1,4 @@
-package nekotaku.anime;
+package nekotaku.anime.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

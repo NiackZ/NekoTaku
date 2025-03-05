@@ -5,9 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import nekotaku.anime.Anime;
-import nekotaku.anime.AnimeCreateDTO;
-import nekotaku.anime.AnimeGetDTO;
-import nekotaku.anime.AnimeGetShortDTO;
+import nekotaku.anime.dto.AnimeCreateDTO;
+import nekotaku.anime.dto.AnimeGetDTO;
+import nekotaku.anime.dto.AnimeGetShortDTO;
 import nekotaku.anime.service.AnimeService;
 
 import jakarta.validation.constraints.NotNull;

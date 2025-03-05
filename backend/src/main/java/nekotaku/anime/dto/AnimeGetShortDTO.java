@@ -1,7 +1,8 @@
-package nekotaku.anime;
+package nekotaku.anime.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import nekotaku.anime.Anime;
 
 @Setter
 @Getter
