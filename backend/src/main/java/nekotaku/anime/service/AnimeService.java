@@ -6,6 +6,7 @@ import nekotaku.anime.*;
 import nekotaku.anime.dto.AnimeCreateDTO;
 import nekotaku.anime.dto.AnimeGetDTO;
 import nekotaku.anime.dto.AnimeGetShortDTO;
+import nekotaku.anime.dto.AnimeResponseDTO;
 import nekotaku.anime.repository.AnimeRepository;
 import nekotaku.genres.GenreRepository;
 import nekotaku.links.Link;
@@ -42,7 +43,7 @@ public class AnimeService {
     private final Logger logger = LoggerFactory.getLogger(AnimeService.class);
 
     @Transactional
-    public Long createAnime(AnimeCreateDTO animeCreateDTO) throws IOException {
+    public AnimeResponseDTO createAnime(AnimeCreateDTO animeCreateDTO) throws IOException {
         Anime anime = new Anime();
         anime.setRuName(animeCreateDTO.getRusName());
         anime.setRomajiName(animeCreateDTO.getRomName());
@@ -67,11 +68,16 @@ public class AnimeService {
                 .toList());
 
         Long animeId = animeRepository.save(anime).getId();
-        animeRepository.updatePoster(
-                Utils.setPoster(animeCreateDTO.getPoster(), animeId, null, "/images/poster/anime/"),
-                animeId
-        );
-        return animeId;
+        try {
+            animeRepository.updatePoster(
+                    Utils.setPoster(animeCreateDTO.getPoster(), animeId, null, "/images/poster/anime/"),
+                    animeId
+            );
+            return new AnimeResponseDTO(animeId, null);
+        } catch (IOException e) {
+            logger.error("Ошибка при установке постера: {}", e.getMessage());
+            return new AnimeResponseDTO(animeId, e.getMessage());
+        }
     }
 
     public List<AnimeGetDTO> getAllAnimes() {
@@ -92,7 +98,7 @@ public class AnimeService {
     }
 
     @Transactional
-    public void updateAnime(Long id, AnimeCreateDTO anime) throws IOException {
+    public AnimeResponseDTO updateAnime(Long id, AnimeCreateDTO anime) throws IOException {
         Anime currentAnime = animeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Аниме для обновления не найдено"));
 
@@ -114,10 +120,16 @@ public class AnimeService {
 
         animeRepository.save(currentAnime);
 
-        animeRepository.updatePoster(
-                Utils.setPoster(anime.getPoster(), currentAnime.getId(), currentAnime.getPosterURL(), "/images/poster/anime/"),
-                currentAnime.getId()
-        );
+        try {
+            animeRepository.updatePoster(
+                    Utils.setPoster(anime.getPoster(), currentAnime.getId(), currentAnime.getPosterURL(), "/images/poster/anime/"),
+                    currentAnime.getId()
+            );
+            return new AnimeResponseDTO(currentAnime.getId(), null);
+        } catch (IOException e) {
+            logger.error("Ошибка при установке постера: {}", e.getMessage());
+            return new AnimeResponseDTO(currentAnime.getId(), e.getMessage());
+        }
     }
 
     private void updateType(Anime anime, Long typeId) {

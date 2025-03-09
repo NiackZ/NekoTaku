@@ -1,6 +1,7 @@
 package nekotaku.anime.api;
 
 import lombok.AllArgsConstructor;
+import nekotaku.anime.dto.AnimeResponseDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,15 +37,23 @@ public class AnimeController {
     }
 
     @PostMapping
-    public ResponseEntity<Long> createAnime(@RequestBody @NotNull AnimeCreateDTO anime) throws IOException {
-        return ResponseEntity.status(HttpStatus.CREATED).body(animeService.createAnime(anime));
+    public ResponseEntity<AnimeResponseDTO> createAnime(@RequestBody @NotNull AnimeCreateDTO anime) throws IOException {
+        AnimeResponseDTO responseDTO = animeService.createAnime(anime);
+        if (responseDTO.getMessage() != null) {
+            return ResponseEntity.badRequest().body(responseDTO);
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateAnime(@PathVariable Long id, @RequestBody AnimeCreateDTO anime) throws IOException {
-        animeService.updateAnime(id, anime);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<AnimeResponseDTO> updateAnime(@PathVariable Long id, @RequestBody AnimeCreateDTO anime) throws IOException, InterruptedException {
+        AnimeResponseDTO responseDTO = animeService.updateAnime(id, anime);
+        Thread.sleep(2000);
+        if (responseDTO.getMessage() != null) {
+            return ResponseEntity.badRequest().body(responseDTO);
+        }
+        return ResponseEntity.ok().body(responseDTO);
     }
 
     @DeleteMapping("/{id}")
@@ -54,8 +63,7 @@ public class AnimeController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<AnimeGetShortDTO>> search(@RequestBody @NotNull String text)
-            throws InterruptedException {
+    public ResponseEntity<List<AnimeGetShortDTO>> search(@RequestBody @NotNull String text) {
         return ResponseEntity.ok(animeService.searchAnime(text));
     }
 

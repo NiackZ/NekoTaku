@@ -70,6 +70,9 @@ public class Utils {
     public static byte[] resizeImage(byte[] originalImage, String formatName, int targetWidth) throws IOException {
         try(ByteArrayInputStream inputStream = new ByteArrayInputStream(originalImage)) {
             BufferedImage originalBufferedImage = ImageIO.read(inputStream);
+            if (originalBufferedImage == null) {
+                throw new IllegalArgumentException("Не удалось обработать изображение");
+            }
             int originalWidth = originalBufferedImage.getWidth();
             if (originalWidth <= targetWidth) {
                 return originalImage;
@@ -101,7 +104,7 @@ public class Utils {
                 String frontUrl = "/frontend/";
                 //TODO переделать на deletePoster
                 if (previousPosterUrl != null) {
-                    Files.deleteIfExists(Paths.get(absolutePath + frontUrl + previousPosterUrl));
+                    Files.deleteIfExists(Paths.get(String.valueOf(absolutePath), frontUrl, previousPosterUrl));
                 }
                 String directoryPath = absolutePath + frontUrl + "src/public" + imgPath + id + "/";
                 String formatName = Utils.getFileExtension(poster.getFileName());
