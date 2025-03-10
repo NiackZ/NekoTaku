@@ -12,63 +12,25 @@
           single-line
       ></v-text-field>
     </template>
-    <v-data-table-virtual density="comfortable"
-                          hover
-                          :loading="isLoading"
-                          :items="showDeleted ? items : filteredItems"
-                          :row-props="rowFunc"
-                          :headers="headers"
-                          :search="search"
-                          :sort-by="[{ key: 'id', order: 'desc' }]"
+    <v-data-table-virtual
+        density="comfortable"
+        hover
+        :loading="isLoading"
+        :items="showDeleted ? items : filteredItems"
+        :row-props="rowFunc"
+        :headers="headers"
+        :search="search"
+        :sort-by="[{ key: 'id', order: 'desc' }]"
     >
       <template v-slot:top>
         <v-toolbar density="compact" flat style="padding: 0 1rem; background-color: inherit;">
-          <v-dialog v-model="dialog"
-                    max-width="500px"
-                    scrim="black">
-            <template v-slot:activator="{ props }">
-              <v-btn class=""
-                     color="primary"
-                     v-bind="props"
-              >
-                Добавить студию
-              </v-btn>
-            </template>
-            <v-card density="compact">
-              <v-card-title class="text-center">
-                <span class="text-h5">{{ formTitle }}</span>
-              </v-card-title>
-              <v-card-text style="padding: 0">
-                <v-container>
-                  <v-row>
-                    <v-col cols="12">
-                      <v-text-field v-model="editedItem.name"
-                                    variant="outlined"
-                                    hide-details
-                                    autofocus
-                                    label="Название"
-                      ></v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-container>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn color="red"
-                       variant="text"
-                       @click="close"
-                >
-                  Закрыть
-                </v-btn>
-                <v-btn color="blue-darken-1"
-                       variant="text"
-                       @click="this.editedItem.id === null ? create() : save()"
-                >
-                  Сохранить
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
+          <v-btn
+              class=""
+              color="primary"
+              @click="openDialog(null)"
+          >
+            Добавить студию
+          </v-btn>
           <v-checkbox
               class="q-checkbox"
               v-model="showDeleted"
@@ -83,35 +45,44 @@
         <v-icon
             class="me-2"
             size="small"
-            @click="editItem(item)"
+            @click="openDialog(item)"
         >
           mdi-pencil
         </v-icon>
-        <v-icon v-if="!item.isDeleted"
-                size="small"
-                @click="deleteItem(item)"
+        <v-icon
+            v-if="!item.isDeleted"
+            size="small"
+            @click="deleteItem(item)"
         >
           mdi-delete
         </v-icon>
-        <v-icon v-else
-                size="small"
-                @click="restoreItem(item)"
+        <v-icon
+            v-else
+            size="small"
+            @click="restoreItem(item)"
         >
           mdi-restore
         </v-icon>
       </template>
-
       <template v-slot:loading>
         <v-skeleton-loader type="table-row"></v-skeleton-loader>
       </template>
     </v-data-table-virtual>
+    <StudioModal
+        v-model="dialogVisible"
+        :edited-item="editedItem"
+        @saved="onSaved"
+        @created="onCreated"
+    />
   </v-card>
 </template>
 
 <script>
-import {getStudios, saveStudio, createStudio, deleteStudio} from "../../../axios/api/studios.js";
+import {getStudios, saveStudio, deleteStudio} from "../../../axios/api/studios.js";
+import StudioModal from "./StudioModal.vue";
 
 export default {
+  components: {StudioModal},
   data() {
     return {
       headers: [
@@ -120,28 +91,20 @@ export default {
         { title: 'Действия', key: 'actions', sortable: false, width: '100px' }
       ],
       showDeleted: false,
-      dialog: false,
+      dialogVisible: false,
       isLoading: true,
       search: '',
       items: [],
       filteredItems: [],
       editedItem: {
         id: null,
-        name: null
-      },
-      alert: {
-        show: false,
-        text: ''
+        name: null,
+        isDeleted: false
       }
-    }
+    };
   },
   async created() {
     await this.reloadList();
-  },
-  computed: {
-    formTitle() {
-      return this.editedItem.id === null ? 'Новая студия' : 'Редактирование студии';
-    }
   },
   methods: {
     rowFunc(row) {
@@ -152,13 +115,13 @@ export default {
       }
     },
     async reloadList() {
-      try{
+      try {
         this.isLoading = true;
-        this.items = (await getStudios()).data.map(studio => {
+        this.items = (await getStudios()).data.map(item => {
           return {
-            id: studio.id,
-            name: studio.name,
-            isDeleted: studio.isDeleted
+            id: item.id,
+            name: item.name,
+            isDeleted: item.isDeleted
           }
         });
         this.filteredItems = this.items.filter(item => !item.isDeleted);
@@ -172,9 +135,9 @@ export default {
         this.isLoading = false;
       }
     },
-    editItem(item) {
-      this.editedItem = Object.assign({}, item);
-      this.dialog = true;
+    openDialog(item) {
+      this.editedItem = item ? { ...item } : { id: null, name: null, isDeleted: false };
+      this.dialogVisible = true;
     },
     async deleteItem(item) {
       await deleteStudio(item.id);
@@ -185,46 +148,24 @@ export default {
         item.isDeleted = false;
         await saveStudio(item.id, item);
         await this.reloadList();
-      }
-      catch (e) {
+      } catch (e) {
         console.error(e.response.data);
       }
     },
-    close () {
-      this.dialog = false;
-      this.$nextTick(() => {
-        this.editedItem.name = null;
-        this.editedItem.id = null;
-      })
+    onSaved() {
+      this.reloadList();
     },
-    async create() {
-      try {
-        await createStudio(this.editedItem);
-        await this.reloadList();
-        this.close();
-      }
-      catch (e) {
-        console.error(e.response.data);
-      }
+    onCreated() {
+      this.reloadList();
     },
-    async save() {
-      try {
-        this.alert.text = '';
-        this.alert.show = false;
-        await saveStudio(this.editedItem.id, this.editedItem);
-        await this.reloadList();
-        this.close();
-      }
-      catch (e) {
-        //todo сделать красивый алёрт
-        console.error(e.response.data);
-        this.alert.text = e.response.data;
-        this.alert.show = true;
-      }
-    }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
+.alert-container {
+  position: fixed;
+  transform: translateY(calc(100% + 180px)); /*Сомнительно*/
+  width: 100%;
+}
 </style>

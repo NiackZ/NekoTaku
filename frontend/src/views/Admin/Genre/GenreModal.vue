@@ -9,11 +9,11 @@
           <v-row>
             <v-col cols="12">
               <v-text-field
-                v-model="editedItem.name"
-                variant="outlined"
-                autofocus
-                :rules="[required]"
-                label="Название"
+                  v-model="editedItem.name"
+                  variant="outlined"
+                  autofocus
+                  :rules="[required]"
+                  label="Название"
               ></v-text-field>
             </v-col>
           </v-row>
@@ -22,25 +22,23 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="red" variant="text" @click="close">Закрыть</v-btn>
-        <v-btn color="blue-darken-1" variant="text" @click="saveOrCreate">
-          Сохранить
-        </v-btn>
+        <v-btn color="blue-darken-1" variant="text" @click="saveOrCreate">Сохранить</v-btn>
       </v-card-actions>
     </v-card>
     <v-fade-transition>
       <v-alert
-        class="alert-container"
-        :text="alertText"
-        type="error"
-        density="compact"
-        v-model="showAlert"
+          class="alert-container"
+          :text="alertText"
+          type="error"
+          density="compact"
+          v-model="showAlert"
       ></v-alert>
     </v-fade-transition>
   </v-dialog>
 </template>
 
 <script>
-import { createType, saveType } from "../../../axios/api/types.js";
+import {createGenre, saveGenre} from "../../../axios/api/genres.js";
 
 export default {
   props: {
@@ -64,7 +62,7 @@ export default {
       },
     },
     formTitle() {
-      return this.editedItem.id === null ? "Новый тип" : "Редактирование типа";
+      return this.editedItem.id === null ? "Новый жанр" : "Редактирование жанра";
     },
   },
   methods: {
@@ -77,12 +75,11 @@ export default {
     async saveOrCreate() {
       try {
         if (!this.editedItem.name) return;
-
         if (this.editedItem.id === null) {
-          const newType = await createType({ name: this.editedItem.name }); // Создание нового типа
+          const newType = await createGenre({ name: this.editedItem.name });
           this.$emit("created", newType.data);
         } else {
-          await saveType(this.editedItem.id, { name: this.editedItem.name }); // Обновление существующего типа
+          await saveGenre(this.editedItem.id, { name: this.editedItem.name });
           this.$emit("saved");
         }
         this.close();

@@ -82,9 +82,7 @@ import {getTypes, saveType, deleteType} from "../../../axios/api/types.js";
 import TypeModal from "./TypeModal.vue";
 
 export default {
-  components: {
-    TypeModal,
-  },
+  components: {TypeModal},
   data() {
     return {
       headers: [
@@ -101,6 +99,7 @@ export default {
       editedItem: {
         id: null,
         name: null,
+        isDeleted: false
       }
     };
   },
@@ -118,11 +117,11 @@ export default {
     async reloadList() {
       try {
         this.isLoading = true;
-        this.items = (await getTypes()).data.map(type => {
+        this.items = (await getTypes()).data.map(item => {
           return {
-            id: type.id,
-            name: type.name,
-            isDeleted: type.isDeleted
+            id: item.id,
+            name: item.name,
+            isDeleted: item.isDeleted
           }
         });
         this.filteredItems = this.items.filter(item => !item.isDeleted);
@@ -137,7 +136,7 @@ export default {
       }
     },
     openDialog(item) {
-      this.editedItem = item ? { ...item } : { id: null, name: null };
+      this.editedItem = item ? { ...item } : { id: null, name: null, isDeleted: false };
       this.dialogVisible = true;
     },
     async deleteItem(item) {
