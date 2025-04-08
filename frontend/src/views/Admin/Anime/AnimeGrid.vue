@@ -13,7 +13,9 @@
     >
       <router-link :to="{ name: ANIME_DETAIL_ROUTE(), params: { id: anime.id } }" class="text-decoration-none">
         <v-card color="transparent" variant="flat">
-          <v-img :src="anime.posterURL" class="rounded"
+          <v-img v-if="anime.posterURL"
+                 :src="anime.posterURL"
+                 class="rounded"
                  :max-height="css.imgHeight"
           />
           <v-card-text class="px-0 pt-1">
