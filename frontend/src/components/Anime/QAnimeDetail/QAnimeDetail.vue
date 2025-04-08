@@ -21,16 +21,21 @@
                       variant="underlined"
                       :error-messages="v$.form.romName.$errors.map(e => e.$message)"
         />
-        <v-autocomplete label="Тип"
-                        v-model="form.type.value"
-                        :items="enchantedTypeList"
-                        item-value="id" item-title="name"
-                        variant="underlined"
-                        density="compact"
-                        :error-messages="v$.form.type.value.$errors.map(e => e.$message)"
-                        @update:modelValue="handleTypeSelection"
+        <v-autocomplete
+            v-for="field in autocompleteFormFields"
+            :key="field"
+            :label="field.label"
+            v-model="form[field.model].value"
+            :items="getEnchantedList(field.model)"
+            item-value="id"
+            item-title="name"
+            variant="underlined"
+            :multiple="field.multiple"
+            density="compact"
+            :error-messages="v$.form[field.model].value.$errors.map(e => e.$message)"
+            @update:modelValue="handleSelection(field.model, $event)"
         >
-          <template v-slot:item="{ props, item }">
+          <template #item="{ props, item }">
             <v-list-item
                 v-bind="props"
                 :title="item.raw.name"
@@ -39,32 +44,6 @@
             />
           </template>
         </v-autocomplete>
-        <v-autocomplete label="Жанр"
-                        v-model="form.genre.value"
-                        :items="form.genre.list"
-                        item-value="id" item-title="name"
-                        variant="underlined"
-                        multiple
-                        density="compact"
-                        :error-messages="v$.form.genre.value.$errors.map(e => e.$message)"
-        />
-        <v-autocomplete label="Студия"
-                        v-model="form.studio.value"
-                        :items="form.studio.list"
-                        item-value="id" item-title="name"
-                        variant="underlined"
-                        multiple
-                        density="compact"
-                        :error-messages="v$.form.studio.value.$errors.map(e => e.$message)"
-        />
-        <v-autocomplete label="Статус"
-                        v-model="form.status.value"
-                        :items="form.status.list"
-                        item-value="id" item-title="name"
-                        variant="underlined"
-                        density="compact"
-                        :error-messages="v$.form.status.value.$errors.map(e => e.$message)"
-        />
         <v-text-field label="Количество эпизодов"
                       v-model="form.episodeCount"
                       variant="underlined"
@@ -103,7 +82,29 @@
         </div>
       </v-form>
       <TypeModal
-          v-model="dialogVisible"
+          v-model="visibleModal.type"
+          v-if="selectedModal === 'type'"
+          :edited-item="editedItem"
+          @saved="onSaved"
+          @created="onCreated"
+      />
+      <GenreModal
+          v-model="visibleModal.genre"
+          v-if="selectedModal === 'genre'"
+          :edited-item="editedItem"
+          @saved="onSaved"
+          @created="onCreated"
+      />
+      <StudioModal
+          v-model="visibleModal.studio"
+          v-if="selectedModal === 'studio'"
+          :edited-item="editedItem"
+          @saved="onSaved"
+          @created="onCreated"
+      />
+      <StatusModal
+          v-model="visibleModal.status"
+          v-if="selectedModal === 'status'"
           :edited-item="editedItem"
           @saved="onSaved"
           @created="onCreated"
@@ -119,14 +120,29 @@ import QLinkField from "../../QLinkField/QLinkField.vue";
 import QJoditEditor from "../../QJoditEditor/QJoditEditor.vue";
 import QVueDatePicker from "../../QVueDatePicker/QVueDatePicker.vue";
 import QFileUpload from "../../QFileUpload/QFileUpload.vue";
-import {encodeImage, getMarks, getStatuses, getStudios, getTypes, isNotEmpty} from "../../../utils/utils.js";
+import {encodeImage, getMarks, isNotEmpty} from "../../../utils/utils.js";
 import {getGenres} from "../../../axios/api/genres.js";
+import {getTypes} from "../../../axios/api/types.js";
+import {getStatuses} from "../../../axios/api/statuses.js";
+import {getStudios} from "../../../axios/api/studios.js";
 import axios from '/src/axios/http-common'
 import TypeModal from "../../../views/Admin/Type/TypeModal.vue";
+import GenreModal from "../../../views/Admin/Genre/GenreModal.vue";
+import StudioModal from "../../../views/Admin/Studio/StudioModal.vue";
+import StatusModal from "../../../views/Admin/Status/StatusModal.vue";
+
+const ADD_NEW = 'add-new';
+
+const MODEL = {
+  TYPE: 'type',
+  GENRE: 'genre',
+  STUDIO: 'studio',
+  STATUS: 'status'
+}
 
 export default {
   name: 'QAnimeDetail',
-  components: {TypeModal, QFileUpload, QVueDatePicker, QJoditEditor, QLinkField},
+  components: {StatusModal, StudioModal, GenreModal, TypeModal, QFileUpload, QVueDatePicker, QJoditEditor, QLinkField},
   props: {
     id: Number
   },
@@ -163,16 +179,43 @@ export default {
       },
       anime: null,
       v$: useVuelidate({$scope: 'form'}),
-      dialogVisible: false, // Состояние модального окна
-      editedItem: { id: null, name: '' }, // Данные для редактирования/создания типа
+      autocompleteFormFields: [
+        {
+          label: 'Тип',
+          model: MODEL.TYPE,
+          multiple: false,
+        },
+        {
+          label: 'Жанр',
+          model: MODEL.GENRE,
+          multiple: true,
+        },
+        {
+          label: 'Студия',
+          model: MODEL.STUDIO,
+          multiple: true,
+        },
+        {
+          label: 'Статус',
+          model: MODEL.STATUS,
+          multiple: false,
+        }
+      ],
+      editedItem: { id: null, name: '', isDeleted: false }, // Данные для редактирования/создания типа
+      selectedModal: null,
+      visibleModal: {
+        type: false,
+        genre: false,
+        studio: false,
+        status: false
+      }
     }
   },
   computed: {
-    enchantedTypeList() {
-      //todo сделать подобное для других полей и убрать дублирование кода
-      return [
-        { id: 'add-new', name: 'Добавить новый' },
-        ...this.form.type.list,
+    getEnchantedList() {
+      return (field) => [
+        { id: ADD_NEW, name: 'Добавить новый' },
+        ...this.form[field].list,
       ];
     }
   },
@@ -188,11 +231,11 @@ export default {
     const statusesPromise = getStatuses();
     const marksPromise = getMarks();
 
-    this.form.type.list = (await typesPromise).data;
-    this.form.genre.list = (await genresPromise).data;
-    this.form.studio.list = (await studiosPromise).data;
-    this.form.status.list = (await statusesPromise).data;
-    this.form.marks.list = (await marksPromise).data;
+    this.form.type.list = (await typesPromise).data.filter(item => !item.isDeleted);
+    this.form.genre.list = (await genresPromise).data.filter(item => !item.isDeleted);
+    this.form.studio.list = (await studiosPromise).data.filter(item => !item.isDeleted);
+    this.form.status.list = (await statusesPromise).data.filter(item => !item.isDeleted);
+    this.form.marks.list = (await marksPromise).data.filter(item => !item.isDeleted);
 
     if (animePromise !== null) {
       this.anime = (await animePromise).data;
@@ -223,28 +266,59 @@ export default {
     document.title = this.$props.id ? 'Редактирование аниме' : 'Добавление нового аниме';
   },
   methods: {
-    handleTypeSelection(value) {
-      if (value === 'add-new') {
-        this.openTypeModal(); // Открываем модалку
-        this.form.type.value = null; // Очищаем текущее значение
+    handleSelection(field, value) {
+      // Проверяем, является ли поле множественным (multiple)
+      if (Array.isArray(value)) {
+        // Если выбран "Добавить новый" среди выбранных значений
+        if (value.includes(ADD_NEW)) {
+          // Удаляем 'add-new' из массива выбранных значений
+          this.form[field].value = value.filter(item => item !== ADD_NEW);
+          this.openModal(field); // Открываем модалку для выбранного поля
+        } else {
+          console.log(`Выбраны ${field}:`, value);
+        }
       } else {
-        console.log('Выбран тип:', value);
+        // Обработка для одиночного выбора
+        if (value === ADD_NEW) {
+          this.form[field].value = null; // Очищаем текущее значение
+          this.openModal(field); // Открываем модалку для выбранного поля
+        } else {
+          console.log(`Выбран ${field}:`, value);
+        }
       }
     },
-    openTypeModal() {
-      this.editedItem = { id: null, name: '' }; // Подготавливаем пустой объект для создания нового типа
-      this.dialogVisible = true; // Открываем модалку
+    openModal(field) {
+      this.editedItem = { id: null, name: '', isDeleted: false }; // Подготавливаем пустой объект для создания нового элемента
+      this.visibleModal[field] = true;
+      this.selectedModal = field; // Сохраняем текущее поле для дальнейшей обработки
     },
     onSaved(newType) {
-      // Добавляем сохранённый тип в список
-      this.form.type.list.push(newType);
-      this.dialogVisible = false; // Закрываем модалку
+      this.reloadList(this.selectedModal);
+      this.visibleModal[this.selectedModal] = false;
+      this.selectedModal = null;
     },
     onCreated(newType) {
-      // Добавляем созданный тип в список
-      this.form.type.list.push(newType);
-      this.form.type.value = newType.id; // Устанавливаем выбранным новый тип
-      this.dialogVisible = false; // Закрываем модалку
+      this.reloadList(this.selectedModal);
+      this.visibleModal[this.selectedModal] = false;
+      this.selectedModal = null;
+    },
+    async reloadList(list) {
+      switch (list) {
+        case MODEL.TYPE:
+          this.form[list].list = (await getTypes()).data.filter(item => !item.isDeleted);
+          break;
+        case MODEL.GENRE:
+          this.form[list].list = (await getGenres()).data.filter(item => !item.isDeleted);
+          break;
+        case MODEL.STUDIO:
+          this.form[list].list = (await getStudios()).data.filter(item => !item.isDeleted);
+          break;
+        case MODEL.STATUS:
+          this.form[list].list = (await getStatuses()).data.filter(item => !item.isDeleted);
+          break;
+        default:
+          console.error("ERROR")
+      }
     },
     updateDate(newValue) {
       this.form.period = newValue;
@@ -287,17 +361,32 @@ export default {
         console.log('Anime успешно создано: ', response.data);
       }
       catch (error) {
-        console.error('Ошибка при создании Anime: ', error);
+        const id = error.response.data?.id;
+        const msg = error.response.data?.message;
+        if (!!id) {
+          console.info('Аниме сохранено с ИД', id);
+          this.$router.push(`/admin/anime/${id}`);
+        }
+        if (!!msg) {
+          console.error(msg);
+        }
       }
     },
     async saveAnime() {
       const updated = await this.getFormData();
       try {
         await axios.put(`/anime/${this.anime.id}`, updated);
-        console.log('Anime успешно сохранено ');
+        console.log('Anime успешно сохранено');
       }
       catch (error) {
-        console.error('Ошибка при сохранении Anime: ', error);
+        const id = error.response.data?.id;
+        const msg = error.response.data?.message;
+        if (!!id) {
+          console.info('Аниме сохранено с ИД', id);
+        }
+        if (!!msg) {
+          console.error(msg);
+        }
       }
     }
   },
