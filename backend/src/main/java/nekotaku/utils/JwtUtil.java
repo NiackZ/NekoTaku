@@ -4,16 +4,15 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import lombok.NonNull;
+import nekotaku.utils.model.TokenStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
-import nekotaku.utils.model.TokenStatus;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -44,10 +43,10 @@ public class JwtUtil {
         List<String> rolesList = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority).toList();
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
-                .setExpiration(accessExpiration)
-                .signWith(jwtAccessSecret)
+                .claim(Claims.SUBJECT, userDetails.getUsername())
+                .claim(Claims.EXPIRATION, accessExpiration)
                 .claim(ROLE_LIST_NAME, rolesList)
+                .signWith(jwtAccessSecret)
                 .compact();
     }
 
@@ -56,8 +55,8 @@ public class JwtUtil {
         final Instant refreshExpirationInstant = now.plusDays(30).atZone(ZoneId.systemDefault()).toInstant();
         final Date refreshExpiration = Date.from(refreshExpirationInstant);
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
-                .setExpiration(refreshExpiration)
+                .claim(Claims.SUBJECT, userDetails.getUsername())
+                .claim(Claims.EXPIRATION, refreshExpiration)
                 .signWith(jwtRefreshSecret)
                 .compact();
     }
@@ -70,9 +69,9 @@ public class JwtUtil {
         return validateTokenDetailed(accessToken, jwtAccessSecret);
     }
 
-    private TokenStatus validateTokenDetailed(@NonNull String token, @NonNull Key secret) {
+    private TokenStatus validateTokenDetailed(@NonNull String token, @NonNull SecretKey secret) {
         try {
-            createParser(secret).parseClaimsJws(token);
+            createParser(secret).parseSignedClaims(token);
             return TokenStatus.VALID;
         } catch (ExpiredJwtException e) {
             log.warn("Токен истёк: {}", e.getMessage());
@@ -100,8 +99,8 @@ public class JwtUtil {
         return getClaims(token, jwtRefreshSecret);
     }
 
-    private Claims getClaims(@NonNull String token, @NonNull Key secret) {
-        return createParser(secret).parseClaimsJws(token).getBody();
+    private Claims getClaims(@NonNull String token, @NonNull SecretKey secret) {
+        return createParser(secret).parseSignedClaims(token).getPayload();
     }
 
     public String extractUsername(String token) throws SignatureException {
@@ -127,9 +126,9 @@ public class JwtUtil {
         return claimsResolver.apply(claims);
     }
 
-    private JwtParser createParser(Key secret) {
-        return Jwts.parserBuilder()
-                .setSigningKey(secret)
+    private JwtParser createParser(SecretKey secret) {
+        return Jwts.parser()
+                .verifyWith(secret)
                 .build();
     }
 
