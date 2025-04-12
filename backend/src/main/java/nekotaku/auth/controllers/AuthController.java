@@ -26,7 +26,7 @@ import static nekotaku.config.JwtRequestFilter.BEARER_STR;
 public class AuthController {
 
     private final AuthService authService;
-    private final Logger log = LoggerFactory.getLogger(AuthController.class);
+    private final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     @PostMapping("login")
     public ResponseEntity<?> createAuthToken(@RequestBody JwtRequest authRequest) {
@@ -49,7 +49,7 @@ public class AuthController {
 
     @PostMapping("token")
     public ResponseEntity<?> getToken(@RequestBody RefreshJwtRequest request) {
-        log.info("Refresh: {}", request.getRefreshToken()
+        logger.info("Refresh: {}", request.getRefreshToken()
                 .substring(request.getRefreshToken().length() - 10));
         return authService.getToken(request.getRefreshToken());
     }
@@ -65,7 +65,7 @@ public class AuthController {
 
     private String getHeaderToken(HttpServletRequest request) {
         String authHeader = request.getHeader(AUTHORIZATION);
-        log.info("getHeaderToken: {}", authHeader);
+        logger.info("getHeaderToken: {}", authHeader);
         if (StringUtils.hasText(authHeader) && authHeader.startsWith(BEARER_STR)) {
             String jwt = authHeader.substring(BEARER_STR.length());
             if (!jwt.equalsIgnoreCase("null")) {

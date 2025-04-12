@@ -23,7 +23,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private final Logger log = LoggerFactory.getLogger(JwtUtil.class);
+    private final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
     private final SecretKey jwtAccessSecret;
     private final SecretKey jwtRefreshSecret;
     private final String ROLE_LIST_NAME = "roles";
@@ -74,19 +74,19 @@ public class JwtUtil {
             createParser(secret).parseSignedClaims(token);
             return TokenStatus.VALID;
         } catch (ExpiredJwtException e) {
-            log.warn("Токен истёк: {}", e.getMessage());
+            logger.warn("Токен истёк: {}", e.getMessage());
             return TokenStatus.EXPIRED;
         } catch (UnsupportedJwtException e) {
-            log.error("Unsupported JWT: {}", e.getMessage());
+            logger.error("Unsupported JWT: {}", e.getMessage());
             return TokenStatus.UNSUPPORTED;
         } catch (MalformedJwtException e) {
-            log.error("Malformed JWT: {}", e.getMessage());
+            logger.error("Malformed JWT: {}", e.getMessage());
             return TokenStatus.MALFORMED;
         } catch (SignatureException e) {
-            log.error("Invalid signature: {}", e.getMessage());
+            logger.error("Invalid signature: {}", e.getMessage());
             return TokenStatus.INVALID_SIGNATURE;
         } catch (Exception e) {
-            log.error("Invalid token: {}", e.getMessage());
+            logger.error("Invalid token: {}", e.getMessage());
             return TokenStatus.INVALID;
         }
     }
@@ -116,7 +116,7 @@ public class JwtUtil {
             }
             return roles.stream().map(Object::toString).toList();
         } catch (Exception e) {
-            log.error("Не удалось извлечь роли: {}", e.getMessage());
+            logger.error("Не удалось извлечь роли: {}", e.getMessage());
             return List.of();
         }
     }

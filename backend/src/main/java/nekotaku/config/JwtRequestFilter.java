@@ -25,7 +25,7 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JwtRequestFilter extends OncePerRequestFilter {
-    private final Logger log = LoggerFactory.getLogger(JwtRequestFilter.class);
+    private final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
     public static final String AUTHORIZATION = "Authorization";
     public static final String BEARER_STR = "Bearer ";
     private final JwtUtil jwtUtil;
@@ -43,13 +43,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 }
             }
             catch (ExpiredJwtException e) {
-                log.warn("Время жизни токена истекло.");
+                logger.warn("Время жизни токена истекло.");
             }
             catch (SignatureException e) {
-                log.warn("Подпись JWT не совпадает с локально вычисленной подписью. Действительность JWT не может быть подтверждена и не должна вызывать доверия.");
+                logger.warn("Подпись JWT не совпадает с локально вычисленной подписью. Действительность JWT не может быть подтверждена и не должна вызывать доверия.");
             }
             catch (MalformedJwtException exception) {
-                log.error("MalformedJwtException: ");
+                logger.error("MalformedJwtException: ");
             }
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

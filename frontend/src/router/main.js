@@ -1,13 +1,13 @@
 import Main from "../views/Main.vue";
 import Item from "../views/Public/Content/Item.vue";
-import {PATH} from "../constants/constants.js";
+import {PATH, SITE_NAME} from "../constants/constants.js";
 
 export const mainRoutes = [
     {
         path: '/',
         component: Main,
         meta: {
-            title: "Главная"
+            title: SITE_NAME
         }
     },
     {
