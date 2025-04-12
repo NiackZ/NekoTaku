@@ -2,10 +2,10 @@ package nekotaku.anime.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
-import nekotaku.anime.*;
+import nekotaku.anime.Anime;
+import nekotaku.anime.AnimeGetProjection;
+import nekotaku.anime.AnimeGetShortProjection;
 import nekotaku.anime.dto.AnimeCreateDTO;
-import nekotaku.anime.dto.AnimeGetDTO;
-import nekotaku.anime.dto.AnimeGetShortDTO;
 import nekotaku.anime.dto.AnimeResponseDTO;
 import nekotaku.anime.repository.AnimeRepository;
 import nekotaku.genres.GenreRepository;
@@ -16,9 +16,10 @@ import nekotaku.status.StatusRepository;
 import nekotaku.studios.StudioRepository;
 import nekotaku.types.TypeRepository;
 import nekotaku.utils.Utils;
+import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,16 +81,29 @@ public class AnimeService {
         }
     }
 
-    public List<AnimeGetDTO> getAllAnimes() {
-        return animeRepository.findAll().stream()
-                .map(AnimeGetDTO::new)
-                .toList();
+    //todo подумать над исключениями
+    public List<AnimeGetProjection> getAllAnimes() {
+        try {
+            return animeRepository.findAllAnimesWithGenres();
+        } catch (DataAccessException e) {
+            logger.error("Произошла ошибка базы данных при получении аниме: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        } catch (Exception e) {
+            logger.error("Неожиданная ошибка в getAllAnimes: {}", e.getMessage(), e);
+            throw new ServiceException("Не удалось получить список аниме", e);
+        }
     }
 
-    public List<AnimeGetShortDTO> getAllAnimesShort() {
-        return animeRepository.findAll().stream()
-                .map(AnimeGetShortDTO::new)
-                .toList();
+    public List<AnimeGetShortProjection> getAllAnimesShort() {
+        try {
+            return animeRepository.findAllMainPageInfo();
+        } catch (DataAccessException e) {
+            logger.error("Произошла ошибка базы данных при получении аниме: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        } catch (Exception e) {
+            logger.error("Неожиданная ошибка в getAllAnimes: {}", e.getMessage(), e);
+            throw new ServiceException("Не удалось получить список аниме", e);
+        }
     }
 
     public Anime getAnimeById(Long id) {
@@ -191,11 +205,11 @@ public class AnimeService {
         // Реализация удаления с флагом isDeleted = 1
     }
 
-    public List<AnimeGetShortDTO> searchAnime(String text) {
-        Specification<Anime> spec = AnimeSpecification.search(clearTitle(text));
-        return animeRepository.findAll(spec).stream()
-                .map(AnimeGetShortDTO::new)
-                .toList();
+    public List<AnimeGetShortProjection> searchAnime(String text) {
+        text = clearTitle(text);
+        return animeRepository.findByRuNameIgnoreCaseContainingOrEnNameIgnoreCaseContainingOrRomajiNameIgnoreCaseContainingOrKanjiNameIgnoreCaseContaining(
+                text, text, text, text
+        );
     }
 
     private String clearTitle(String title) {

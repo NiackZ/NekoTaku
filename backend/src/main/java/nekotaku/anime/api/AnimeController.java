@@ -7,8 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import nekotaku.anime.Anime;
 import nekotaku.anime.dto.AnimeCreateDTO;
-import nekotaku.anime.dto.AnimeGetDTO;
-import nekotaku.anime.dto.AnimeGetShortDTO;
+import nekotaku.anime.AnimeGetProjection;
+import nekotaku.anime.AnimeGetShortProjection;
 import nekotaku.anime.service.AnimeService;
 
 import jakarta.validation.constraints.NotNull;
@@ -21,13 +21,13 @@ import java.util.List;
 public class AnimeController {
     private final AnimeService animeService;
 
-      @GetMapping
-    public ResponseEntity<List<AnimeGetDTO>> getAll() {
+    @GetMapping
+    public ResponseEntity<List<AnimeGetProjection>> getAll() {
         return ResponseEntity.ok(animeService.getAllAnimes());
     }
 
     @GetMapping("/short")
-    public ResponseEntity<List<AnimeGetShortDTO>> getAllShortInfo() {
+    public ResponseEntity<List<AnimeGetShortProjection>> getAllShortInfo() {
         return ResponseEntity.ok(animeService.getAllAnimesShort());
     }
 
@@ -63,7 +63,7 @@ public class AnimeController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<AnimeGetShortDTO>> search(@RequestBody @NotNull String text) {
+    public ResponseEntity<List<AnimeGetShortProjection>> search(@RequestBody @NotNull String text) {
         return ResponseEntity.ok(animeService.searchAnime(text));
     }
 

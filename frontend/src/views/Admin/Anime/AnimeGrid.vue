@@ -19,9 +19,9 @@
                  :max-height="css.imgHeight"
           />
           <v-card-text class="px-0 pt-1">
-            <h3 class="max-line-2">{{anime.rusName}}</h3>
+            <h3 class="max-line-2">{{anime.ruName}}</h3>
             <div class="container">
-              <div class="text-left">{{anime.type.name}}</div>
+              <div class="text-left">{{anime.typeName}}</div>
               <div class="text-right">{{anime.startDate ? new Date(anime.startDate).getFullYear() : ''}}</div>
             </div>
           </v-card-text>
@@ -51,7 +51,7 @@ export default {
     }
   },
   async created() {
-    const animes = await axios.get('anime');
+    const animes = await axios.get('anime');//todo вынести запрос
     if (!!animes.data) {
       this.animes = animes.data;
     }
