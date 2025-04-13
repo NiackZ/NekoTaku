@@ -101,7 +101,7 @@ public class AnimeService {
             logger.error("Произошла ошибка базы данных при получении аниме: {}", e.getMessage(), e);
             return Collections.emptyList();
         } catch (Exception e) {
-            logger.error("Неожиданная ошибка в getAllAnimes: {}", e.getMessage(), e);
+            logger.error("Неожиданная ошибка в getAllAnimesShort: {}", e.getMessage(), e);
             throw new ServiceException("Не удалось получить список аниме", e);
         }
     }
