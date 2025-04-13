@@ -33,7 +33,7 @@ public class AuthService {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final Map<String, String> refreshStorage = new HashMap<>();//redis
+    private final Map<String, String> refreshStorage = new HashMap<>();
 
     public ResponseEntity<?> createNewUser(@RequestBody RegistrationUserDto registrationUserDto) {
         if (!registrationUserDto.getPassword().equals(registrationUserDto.getConfirmPassword())) {
@@ -47,15 +47,25 @@ public class AuthService {
     }
 
     public ResponseEntity<?> login(@NonNull @RequestBody JwtRequest authRequest) {
+        String username = authRequest.getUsername();
+        if (username.isEmpty()) {
+            return ResponseEntity.badRequest().body("Пустое имя пользователя");
+        }
+
+        String password = authRequest.getPassword();
+        if (password.isEmpty()) {
+            return ResponseEntity.badRequest().body("Пустой пароль");
+        }
+
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         } catch (BadCredentialsException e) {
             return new ResponseEntity<>(new ApiResponse(HttpStatus.UNAUTHORIZED, "Неправильный логин или пароль"), HttpStatus.UNAUTHORIZED);
         }
-        UserDetails userDetails = userService.loadUserByUsername(authRequest.getUsername());
+        UserDetails userDetails = userService.loadUserByUsername(username);
         String accessToken = jwtUtil.generateAccessToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
-        refreshStorage.put(authRequest.getUsername(), refreshToken);
+        refreshStorage.put(username, refreshToken);
         Map<String, Object> map = new HashMap<>();
         map.put("user", userService.getByUserName(userDetails.getUsername()));
         map.put("jwt", new JwtResponse(accessToken, refreshToken));

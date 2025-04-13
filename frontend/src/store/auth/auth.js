@@ -1,6 +1,6 @@
 import axios from '/src/axios/http-common'
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "/src/constants/constants.js";
-import {checkRights} from "../../utils/utils.js";
+import {checkRights, isEmpty} from "../../utils/utils.js";
 
 const auth = {
     namespaced: true,
@@ -14,12 +14,9 @@ const auth = {
     actions: {
         async enter({commit, dispatch}, data) {
             try {
-                const loginJson = {
-                    username: data.username,
-                    password: data.password
-                };
-                console.log(loginJson);
-                const response = await axios.post('/auth/login', loginJson);
+                const {username, password} = data;
+                if (isEmpty(username) || isEmpty(password)) return;
+                const response = await axios.post('/auth/login', {username, password});
                 console.log('OK', response.data);
                 if (response.data.jwt && response.data.jwt[ACCESS_TOKEN] && response.data.jwt[REFRESH_TOKEN]) {
                     const accessToken = response.data.jwt[ACCESS_TOKEN];
@@ -31,8 +28,10 @@ const auth = {
                     commit('setUserState', userData);
                 }
             } catch (error) {
-                console.log('ERROR', error.response);
-                commit('setErrorState', error.response.data.message);
+                const response = error.response;
+                console.log('ERROR', response);
+                commit('setErrorState', response.data.message);
+                alert(response.data);
             }
         },
         async logout({commit, dispatch}) {

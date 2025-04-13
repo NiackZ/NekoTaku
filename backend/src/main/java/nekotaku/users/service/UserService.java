@@ -118,7 +118,7 @@ public class UserService implements UserDetailsService {
                     user.getRoles().stream().map(role -> new SimpleGrantedAuthority(role.getName())).toList()
             );
         } catch (EntityNotFoundException e) {
-            logger.error("Пользователь '{}' не найден.", username, e);
+            logger.error("Пользователь '{}' не найден.", username);
             throw e;
         } catch (Exception e) {
             logger.error("Произошла ошибка при загрузке пользователя: {}", username, e);
@@ -135,7 +135,7 @@ public class UserService implements UserDetailsService {
             user.setRoles(List.of(roleService.getUserRole()));
             return userRepository.save(user);
         } catch (EntityExistsException e) {
-            logger.error("Пользователь с именем '{}' уже существует.", registrationUserDto.getUsername(), e);
+            logger.error("Пользователь с именем '{}' уже существует.", registrationUserDto.getUsername());
             throw e;
         } catch (Exception e) {
             logger.error("Произошла ошибка при создании нового пользователя: {}", registrationUserDto.getUsername(), e);
