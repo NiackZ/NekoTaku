@@ -1,17 +1,18 @@
 package nekotaku.anime.api;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import nekotaku.anime.Anime;
+import nekotaku.anime.AnimeGetProjection;
+import nekotaku.anime.AnimeGetShortProjection;
+import nekotaku.anime.dto.AnimeCreateDTO;
 import nekotaku.anime.dto.AnimeResponseDTO;
+import nekotaku.anime.service.AnimeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import nekotaku.anime.Anime;
-import nekotaku.anime.dto.AnimeCreateDTO;
-import nekotaku.anime.AnimeGetProjection;
-import nekotaku.anime.AnimeGetShortProjection;
-import nekotaku.anime.service.AnimeService;
 
-import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class AnimeController {
         return ResponseEntity.ok(animeService.getAllAnimes());
     }
 
-    @GetMapping("/short")
+    @GetMapping("/compact")
     public ResponseEntity<List<AnimeGetShortProjection>> getAllShortInfo() {
         return ResponseEntity.ok(animeService.getAllAnimesShort());
     }
@@ -37,11 +38,8 @@ public class AnimeController {
     }
 
     @PostMapping
-    public ResponseEntity<AnimeResponseDTO> createAnime(@RequestBody @NotNull AnimeCreateDTO anime) throws IOException {
+    public ResponseEntity<AnimeResponseDTO> createAnime(@RequestBody @NotNull @Valid AnimeCreateDTO anime) throws IOException {
         AnimeResponseDTO responseDTO = animeService.createAnime(anime);
-        if (responseDTO.getMessage() != null) {
-            return ResponseEntity.badRequest().body(responseDTO);
-        }
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
 
@@ -49,10 +47,6 @@ public class AnimeController {
     @PutMapping("/{id}")
     public ResponseEntity<AnimeResponseDTO> updateAnime(@PathVariable Long id, @RequestBody AnimeCreateDTO anime) throws IOException, InterruptedException {
         AnimeResponseDTO responseDTO = animeService.updateAnime(id, anime);
-        Thread.sleep(2000);
-        if (responseDTO.getMessage() != null) {
-            return ResponseEntity.badRequest().body(responseDTO);
-        }
         return ResponseEntity.ok().body(responseDTO);
     }
 
@@ -63,7 +57,7 @@ public class AnimeController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<AnimeGetShortProjection>> search(@RequestBody @NotNull String text) {
+    public ResponseEntity<List<AnimeGetShortProjection>> search(@RequestParam @NotNull String text) {
         return ResponseEntity.ok(animeService.searchAnime(text));
     }
 

@@ -9,7 +9,7 @@ export async function getMarks() {
 }
 
 export function getAnimeInfoForGrid() {
-    return axios.get("/anime/short");
+    return axios.get("/anime/compact");
 }
 
 export async function getAnimeInfo(id) {
