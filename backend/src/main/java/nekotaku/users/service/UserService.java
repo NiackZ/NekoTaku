@@ -12,7 +12,6 @@ import nekotaku.users.api.dto.UserGetDTO;
 import nekotaku.users.api.dto.UserUpdateDTO;
 import nekotaku.users.model.User;
 import nekotaku.users.repository.IUserRepository;
-import nekotaku.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -83,8 +82,9 @@ public class UserService implements UserDetailsService {
             //
             User user = findById(userData.getId());
             if (userData.getAvatar() != null) {
-                String avatarUrl = Utils.setPoster(userData.getAvatar(), user.getId(), user.getAvatarURL(), "/images/user/avatar/");
-                userRepository.updateAvatar(avatarUrl, user.getId());
+                //todo
+                //String avatarUrl = Utils.setPoster(userData.getAvatar(), user.getId(), user.getAvatarURL(), "/images/user/avatar/");
+                //userRepository.updateAvatar(avatarUrl, user.getId());
             }
             return user.getId();
         } catch (EntityNotFoundException e) {

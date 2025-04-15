@@ -10,6 +10,7 @@ import nekotaku.marks.Mark;
 import nekotaku.studios.Studio;
 import nekotaku.title.model.Title;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -40,7 +41,7 @@ public class Anime extends Title {
             joinColumns = @JoinColumn(name = "anime_id"),
             inverseJoinColumns = @JoinColumn(name = "link_id")
     )
-    private List<Link> links;
+    private List<Link> links = new ArrayList<>();
     @OneToMany
     @JoinTable(
             name = "anime_marks",
