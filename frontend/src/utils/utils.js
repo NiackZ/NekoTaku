@@ -27,26 +27,3 @@ export function isEmpty(obj) {
 export function isNotEmpty(obj) {
     return !isEmpty(obj);
 }
-
-export async function encodeImage(file) {
-    return isEmpty(file)
-        ? null
-        : new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onloadend = () => {
-            const base64String = reader.result.split(',')[1];
-            const dataToSend = {
-                fileName: file.name,
-                base64Image: base64String
-            }
-            resolve(dataToSend);
-        };
-
-        reader.onerror = () => {
-            reject(new Error('Ошибка при кодировании изображения'));
-        };
-
-        reader.readAsDataURL(file);
-    });
-}

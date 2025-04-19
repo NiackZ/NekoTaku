@@ -25,9 +25,9 @@ public class LinkService {
     }
 
     public void updateAnimeLinks(Anime anime, List<Link> newLinks) {
+        if (newLinks == null || newLinks.isEmpty()) return;
 
         List<Link> currentLinks = anime.getLinks();
-
         // Удаляем отсутствующие в новом списке ссылки
         List<Link> toRemove = currentLinks.stream()
                 .filter(existing -> newLinks.stream()

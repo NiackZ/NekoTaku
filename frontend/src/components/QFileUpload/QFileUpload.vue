@@ -19,7 +19,7 @@
       label="Введите URL-адрес изображения"
       @input="previewImage"
       prepend-icon="mdi-link-variant"
-      clearable="true"
+      clearable
       variant="underlined"
   />
   <v-img v-if="withPreview" :src="imageSrc" contain/>

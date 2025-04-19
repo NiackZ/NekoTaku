@@ -1,17 +1,17 @@
 package nekotaku.anime.api;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import nekotaku.anime.Anime;
 import nekotaku.anime.AnimeGetProjection;
 import nekotaku.anime.AnimeGetShortProjection;
 import nekotaku.anime.dto.AnimeCreateDTO;
-import nekotaku.anime.dto.AnimeResponseDTO;
 import nekotaku.anime.service.AnimeService;
+import nekotaku.utils.image.ImageProcessingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,16 +38,17 @@ public class AnimeController {
     }
 
     @PostMapping
-    public ResponseEntity<AnimeResponseDTO> createAnime(@RequestBody @NotNull @Valid AnimeCreateDTO anime) throws IOException {
-        AnimeResponseDTO responseDTO = animeService.createAnime(anime);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+    public ResponseEntity<Long> createAnime(@RequestPart("animeJson") AnimeCreateDTO anime,
+                                            @RequestPart(value = "poster", required = false) MultipartFile poster)  {
+        return ResponseEntity.status(HttpStatus.CREATED).body(animeService.createAnime(anime, poster));
     }
 
-
     @PutMapping("/{id}")
-    public ResponseEntity<AnimeResponseDTO> updateAnime(@PathVariable Long id, @RequestBody AnimeCreateDTO anime) throws IOException, InterruptedException {
-        AnimeResponseDTO responseDTO = animeService.updateAnime(id, anime);
-        return ResponseEntity.ok().body(responseDTO);
+    public ResponseEntity<Long> updateAnime(@PathVariable Long id,
+                                            @RequestPart("animeJson") AnimeCreateDTO anime,
+                                            @RequestPart(value = "poster", required = false) MultipartFile poster)
+            throws IOException, ImageProcessingException {
+        return ResponseEntity.ok().body(animeService.updateAnime(id, anime, poster));
     }
 
     @DeleteMapping("/{id}")

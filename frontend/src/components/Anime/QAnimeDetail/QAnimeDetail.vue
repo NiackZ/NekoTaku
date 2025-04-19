@@ -332,13 +332,10 @@ export default {
     async isValid(){
       return await this.v$.$validate();
     },
-    async getFormData() {
-      const file = this.$refs.fileUpload.getFile();
-      const posterPromise = encodeImage(file);
+    getFormData() {
       const period = this.form.period;
       return {
         id: this.anime?.id,
-        poster: await posterPromise,
         rusName: this.form.rusName,
         romName: this.form.romName,
         typeId: this.form.type.value,
@@ -355,9 +352,17 @@ export default {
     },
     async createAnime() {
       if (!await this.isValid()) return;
-      const createData = this.getFormData();
+      const formData = new FormData();
+
+      formData.append('poster', this.$refs.fileUpload.getFile());
+      formData.append('anime', new Blob([JSON.stringify(this.getFormData())], { type: 'application/json' }));
+
       try {
-        const response = await axios.post("/anime", await createData);
+        const response = await axios.post("/anime", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         console.log('Anime успешно создано: ', response.data);
       }
       catch (error) {
@@ -373,9 +378,16 @@ export default {
       }
     },
     async saveAnime() {
-      const updated = await this.getFormData();
       try {
-        await axios.put(`/anime/${this.anime.id}`, updated);
+        const formData = new FormData();
+        formData.append('poster', this.$refs.fileUpload.getFile());
+        formData.append('animeJson', new Blob([JSON.stringify(this.getFormData())], { type: 'application/json' }));
+
+        await axios.put(`/anime/${this.anime.id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
         console.log('Anime успешно сохранено');
       }
       catch (error) {

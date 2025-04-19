@@ -6,7 +6,6 @@ import nekotaku.anime.Anime;
 import nekotaku.anime.AnimeGetProjection;
 import nekotaku.anime.AnimeGetShortProjection;
 import nekotaku.anime.dto.AnimeCreateDTO;
-import nekotaku.anime.dto.AnimeResponseDTO;
 import nekotaku.anime.repository.AnimeRepository;
 import nekotaku.genres.GenreRepository;
 import nekotaku.links.LinkService;
@@ -14,8 +13,12 @@ import nekotaku.marks.MarkRepository;
 import nekotaku.status.StatusRepository;
 import nekotaku.studios.StudioRepository;
 import nekotaku.types.TypeRepository;
-import nekotaku.utils.ImageService;
 import nekotaku.utils.Utils;
+import nekotaku.utils.image.ImageProcessingException;
+import nekotaku.utils.image.ImageService;
+import nekotaku.utils.image.OutputFormat;
+import nekotaku.utils.image.ScalingStrategy;
+import org.apache.commons.collections4.ListUtils;
 import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +26,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -44,42 +48,49 @@ public class AnimeService {
     private final Logger logger = LoggerFactory.getLogger(AnimeService.class);
 
     @Transactional
-    public AnimeResponseDTO createAnime(AnimeCreateDTO dto) {
-        Anime anime = new Anime();
-        fillAnimeFromDto(anime, dto);
-
-        Long id = animeRepository.save(anime).getId();
-
+    public Long createAnime(AnimeCreateDTO dto, MultipartFile poster) {
         try {
-            ImageService.updatePoster(
-                    dto.getPoster(), id, null, "/images/poster/anime/",
-                    path -> animeRepository.updatePoster(path, id)
-            );
-            return new AnimeResponseDTO(id, null);
-        } catch (IOException e) {
-            return new AnimeResponseDTO(id, e.getMessage());
+            Anime anime = new Anime();
+            fillAnimeFromDto(anime, dto);
+            Long id = animeRepository.save(anime).getId();
+
+            setAnimePoster(id, poster);
+            return id;
+        } catch (IOException | ImageProcessingException e) {
+            logger.error("Ошибка при создании Аниме", e);
+            throw new RuntimeException(e);
         }
     }
 
     @Transactional
-    public AnimeResponseDTO updateAnime(Long id, AnimeCreateDTO dto) {
-        Anime anime = animeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Аниме для обновления не найдено"));
-
-        fillAnimeFromDto(anime, dto);
-
-        animeRepository.save(anime);
-
+    public Long updateAnime(Long id, AnimeCreateDTO dto, MultipartFile poster) throws IOException, ImageProcessingException {
         try {
-            ImageService.updatePoster(
-                    dto.getPoster(), id, anime.getPosterURL(), "/images/poster/anime/",
-                    path -> animeRepository.updatePoster(path, id)
-            );
-            return new AnimeResponseDTO(id, null);
-        } catch (IOException e) {
-            return new AnimeResponseDTO(id, e.getMessage());
+            Anime anime = animeRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException(String.format("Аниме '%s' не найдено", id)));
+            fillAnimeFromDto(anime, dto);
+            animeRepository.save(anime);
+            if (poster != null) {
+                setAnimePoster(id, poster);
+                ImageService.deleteImageByPath(ImageService.buildDeletePath(anime.getPosterURL()));
+            }
         }
+        catch (EntityNotFoundException e) {
+            logger.error(e.getMessage());
+            throw new EntityNotFoundException(String.format("Аниме '%s' не найдено", id), e);
+        }
+        catch (ImageProcessingException e) {
+            logger.error(e.getMessage());
+            throw new ImageProcessingException("Ошибка при обработке изображения", e);
+        }
+        return id;
+    }
 
+    private void setAnimePoster(Long animeId, MultipartFile poster) throws IOException, ImageProcessingException {
+        String posterPath = ImageService.resizeAndSave(
+                poster, 700, 1000, ScalingStrategy.FIT_TO_WIDTH, OutputFormat.JPEG,
+                "/frontend/src/public/images/poster/anime/" + animeId + "/poster_" + Utils.generateRandomString()
+        );
+        animeRepository.updatePoster(posterPath, animeId);
     }
 
     private void fillAnimeFromDto(Anime anime, AnimeCreateDTO dto) {
@@ -89,7 +100,7 @@ public class AnimeService {
         anime.setEpisodeDuration(dto.getEpisodeDuration());
         anime.setDescription(dto.getDescription());
 
-        List<LocalDate> period = dto.getPeriod();
+        List<LocalDate> period = ListUtils.defaultIfNull(dto.getPeriod(), Collections.emptyList());
         anime.setStartDate(period.isEmpty() ? null : period.get(0));
         anime.setEndDate(period.size() > 1 ? period.get(1) : null);
 

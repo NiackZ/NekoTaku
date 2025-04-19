@@ -1,13 +1,12 @@
 package nekotaku.anime.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nekotaku.links.Link;
-import nekotaku.utils.model.Image;
 
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -16,7 +15,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AnimeCreateDTO {
-    private Image poster;
     @NotNull
     private String rusName;
     private String romName;
@@ -25,11 +23,8 @@ public class AnimeCreateDTO {
     private List<Long> studioIds;
     @NotNull
     private Long statusId;
-    @NotNull
     private List<LocalDate> period;
-    @NotNull
     private Integer episodeCount;
-    @NotNull
     private Integer episodeDuration;
     private List<Link> linkList;
     private List<Long> markIds;
